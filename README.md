@@ -67,7 +67,7 @@ change this later if desired.
 
 ## Output
 
-Will produce two plots: [basename]_avg_[tstat].png and 
-[basename]_avg_[tstat].png.  Where [basename] is the base name 
+Will produce two plots: `[basename]_avg_[tstat].png` and 
+`[basename]_avg_[tstat].png`.  Where [basename] is the base name 
 given (otherwise default to "bp") and tstat is the time given 
 to calculate stats.
