@@ -34,3 +34,40 @@ Assumes you have `your` installed already.
 
 Will produce four plots and one text file.  All will start 
 with `outbase`. 
+
+
+# rfi_map
+Script to make images of the average bandpass 
+and standard deviation of bandpass over time. 
+
+Will read in a filterbank and make an image of 
+the mean and standard deviation of bandpass 
+on time scales of `tstat` seconds.  
+
+Note that the plots will divide the bandpass by 
+a median bandpass value so we aren't dominated 
+by intrinsic bandpass shape, just the RFI.  Can 
+change this later if desired.
+
+## Usage
+
+    usage: rfi_map.py [-h] [-o OUTBASE] infile tstat
+
+    Make RFI Diagonstic Plots
+
+    positional arguments:
+      infile                Input *.fil file
+      tstat                 Time (in sec) to calc stats (default is 60.0)
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -o OUTBASE, --outbase OUTBASE
+                            Output file basename
+
+
+## Output
+
+Will produce two plots: [basename]_avg_[tstat].png and 
+[basename]_avg_[tstat].png.  Where [basename] is the base name 
+given (otherwise default to "bp") and tstat is the time given 
+to calculate stats.
