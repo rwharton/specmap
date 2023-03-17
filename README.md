@@ -51,10 +51,10 @@ change this later if desired.
 
 ## Usage
 
-    usage: rfi_map.py [-h] [-o OUTBASE] infile tstat
-
+    usage: rfi_map.py [-h] [-o OUTBASE] [-b] infile tstat
+    
     Make RFI Diagonstic Plots
-
+    
     positional arguments:
       infile                Input *.fil file
       tstat                 Time (in sec) to calc stats (default is 60.0)
@@ -63,7 +63,8 @@ change this later if desired.
       -h, --help            show this help message and exit
       -o OUTBASE, --outbase OUTBASE
                             Output file basename
-
+      -b, --bpfix           Remove bandpass before plotting
+    
 
 ## Output
 

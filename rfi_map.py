@@ -1,6 +1,7 @@
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import copy
 import time
 import multiprocessing as mp
@@ -429,33 +430,73 @@ def calc_bp_stats_chunk(infile, tchunk):
     return tt, freqs, avg_bps, std_bps
 
 
-def make_plot(tt, ff, bp, outfile=None):
+def make_plot(tt, ff, bp, outfile=None, bpass=True):
     """
-    Make plot
+    Make 3 panel plot
     """ 
     if outfile is not None:
         plt.ioff()
     else: pass
 
-    fig = plt.figure(figsize=(12,8))
-    ax = fig.add_subplot()
+    fig = plt.figure(constrained_layout=True)
+    gs = GridSpec(4, 4, figure=fig)
+    #fig = plt.figure()
+    #gs = GridSpec(4, 4, figure=fig, wspace=0.1, hspace=0.1)
+
+    # Top axis for freq
+    ax_t  = fig.add_subplot(gs[0, 0:3])
+    # Middle for time/freq
+    ax_m = fig.add_subplot(gs[1:, 0:3])
+    # Right axis for time
+    ax_r  = fig.add_subplot(gs[1:, 3])
+    # Top right for text if nec
+    ax_txt = fig.add_subplot(gs[0, 3])
+
+    # Make middle time/freq
+    
+    # get median bp
+    if bpass:
+        bpm = np.median(bp, axis=0)
+        bpm_inv = np.zeros(len(bpm))
+        bpm_inv[np.abs(bpm) > 0] = 1 / bpm[np.abs(bpm) > 0]
+        bp_plt = bp * bpm_inv
+    else:
+        bp_plt = bp
+
+    bp_med = np.median(bp_plt)
+    bp_sig = np.std(bp_plt)
+    
+    vmin = max( bp_med - 3 * bp_sig, 0)
+    vmax = bp_med + 3 * bp_sig
     
     ext = [ff[0], ff[-1], tt[0], tt[-1]]
 
-    # get median bp
-    bpm = np.median(bp, axis=0)
-    bpm_inv = np.zeros(len(bpm))
-    bpm_inv[np.abs(bpm) > 0] = 1 / bpm[np.abs(bpm) > 0]
+    im = ax_m.imshow(bp_plt, aspect='auto', interpolation='nearest', 
+                     origin='lower', vmin=vmin, vmax=vmax, extent=ext)
 
-    bp_corr = bp * bpm_inv
+    #cbar = plt.colorbar(im)
 
-    im = ax.imshow(bp_corr, aspect='auto', interpolation='nearest', 
-                   origin='lower', vmin=0.75, vmax=1.25, extent=ext)
+    ax_m.set_xlabel("Frequency (MHz)", fontsize=16)
+    ax_m.set_ylabel("Time (s)", fontsize=16)
 
-    cbar = plt.colorbar(im)
+    # Make top plot of freq
+    fbp = np.mean(bp_plt, axis=0)
+    #fbp_sig = np.std(fbp)
+    #ax_t.plot(ff, fbp/fbp_sig)
+    ax_t.plot(ff, fbp)
+    ax_t.set_xlim(ff[0], ff[-1])
+    ax_t.tick_params(axis='x', labelbottom=False, direction='in')
 
-    ax.set_xlabel("Frequency (MHz)", fontsize=16)
-    ax.set_ylabel("Time (s)", fontsize=16)
+    # Make right plot of time
+    tbp = np.mean(bp_plt, axis=1)
+    #tbp_sig = np.std(tbp)
+    #ax_r.plot(tbp/tbp_sig, tt)
+    ax_r.plot(tbp, tt)
+    ax_r.set_ylim(tt[0], tt[-1])
+    ax_r.tick_params(axis='y', labelleft=False, direction='in')
+
+    # text ?    
+    ax_txt.axis('off')
 
     if outfile is not None:
         plt.savefig(outfile, dpi=100, bbox_inches='tight')
@@ -466,7 +507,7 @@ def make_plot(tt, ff, bp, outfile=None):
     return
      
 
-def rfi_plot(infile, tchunk, outbase):
+def rfi_plot(infile, tchunk, outbase, bpass=True):
     """
     Using the averaged file, make a plot showing the 
     mean and std of bandpass over time chunk tchunk 
@@ -476,14 +517,22 @@ def rfi_plot(infile, tchunk, outbase):
     tt, freqs, bpa, bps = calc_bp_stats_chunk(infile, tchunk)
 
     # outfiles 
-    avg_outfile = "%s_avg_%ds.png" %(outbase, int(tchunk))
-    std_outfile = "%s_std_%ds.png" %(outbase, int(tchunk))
+    avg_out = "%s_avg_%ds" %(outbase, int(tchunk))
+    std_out = "%s_std_%ds" %(outbase, int(tchunk))
+
+    if bpass:
+        avg_out += "_bpcorr"
+        std_out += "_bpcorr"
+
+    avg_outfile = "%s.png" %avg_out
+    std_outfile = "%s.png" %std_out
+
 
     # Make avg plot
-    make_plot(tt, freqs, bpa, outfile=avg_outfile)
+    make_plot(tt, freqs, bpa, outfile=avg_outfile, bpass=bpass)
     
     # Make std plot
-    make_plot(tt, freqs, bps, outfile=std_outfile)
+    make_plot(tt, freqs, bps, outfile=std_outfile, bpass=bpass)
 
     return
 
@@ -504,27 +553,36 @@ def parse_input():
               help='Output file basename',
                         required=False)
     
+    parser.add_argument('-b', '--bpfix',
+              help='Remove bandpass before plotting',
+              action='store_true', required=False)
+    
     args = parser.parse_args()
 
     return args
 
+debug = 0
 
 if __name__ == "__main__":
-    tstart = time.time()
-    args = parse_input()
-    infile = args.infile
-    tstat = args.tstat
-    
-    if args.outbase is not None:
-        outbase = args.outbase
+    if debug:
+        pass
     else:
-        outbase = "bp"
+        tstart = time.time()
+        args = parse_input()
+        infile = args.infile
+        tstat = args.tstat
+        bpfix = args.bpfix
+        
+        if args.outbase is not None:
+            outbase = args.outbase
+        else:
+            outbase = "bp"
 
-    rfi_plot(infile, tstat, outbase)
-    tstop = time.time()
+        rfi_plot(infile, tstat, outbase, bpass=bpfix)
+        tstop = time.time()
 
-    dt = tstop - tstart
-    print("Took %.2f minutes" %(dt/60.0))
+        dt = tstop - tstart
+        print("Took %.2f minutes" %(dt/60.0))
 
 
  
