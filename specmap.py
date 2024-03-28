@@ -4,6 +4,7 @@ from matplotlib.gridspec import GridSpec
 from argparse import ArgumentParser
 import your 
 import time
+import sys
 
 def rfi_spec(infile, tchunk=10.0):
     """
@@ -18,6 +19,12 @@ def rfi_spec(infile, tchunk=10.0):
 
     nt_chunk = int(tchunk / dt)
     nchunks = int( nspec / nt_chunk )
+    
+    if nchunks < 1:
+        print("tchunk is too small!")
+        print(" tchunk = %.1fs < tobs = %.1fs" %(tchunk, nspec * dt))
+        sys.exit(0)
+    else: pass
 
     # Initialize output
     nf = int(nt_chunk / 2) + 1
